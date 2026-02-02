@@ -79,7 +79,7 @@ with col2:
     new_game = st.button("New Game 🔁")
 with col3:
     st.session_state.show_hint = st.checkbox("Show hint", value=st.session_state.show_hint)
-# Fix: Both submission methods should show hints.
+
 if new_game:
     st.session_state.attempts = 0
     st.session_state.secret = random.randint(low, high) #FIXME: Logic broke here. FIX: New secret generated within the correct range for each mode.

@@ -53,7 +53,7 @@ def check_guess(guess, secret):
         if g > secret:
             return "Too High", "📉 Go LOWER!" #FIXME: logic broke here.
         return "Too Low", "📈 Go HIGHER!" #FIXME: Logic broke here
-    # Fixed the hint system to ensure it gives correct feedback based on the comparison with Agent mode editor.
+    # FIX: Hint system ensured for correct feedback based on the comparison with Agent mode editor.
 
 
 def update_score(current_score: int, outcome: str, attempt_number: int):
