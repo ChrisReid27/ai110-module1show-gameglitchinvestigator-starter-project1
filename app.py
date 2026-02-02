@@ -31,7 +31,7 @@ if "secret" not in st.session_state:
     st.session_state.secret = random.randint(low, high)
 
 if "attempts" not in st.session_state: #FIXME: Logic broke here.
-    st.session_state.attempts = 0 # Changed from 1 to 0 to count attempts correctly with Agent mode.
+    st.session_state.attempts = 0 # FIX: Changed from 1 to 0 to count attempts correctly with Agent mode.
 
 if "score" not in st.session_state:
     st.session_state.score = 0
@@ -39,13 +39,22 @@ if "score" not in st.session_state:
 if "status" not in st.session_state:
     st.session_state.status = "playing"
 
+if "last_processed_guess" not in st.session_state:
+    st.session_state.last_processed_guess = None
+
 if "history" not in st.session_state:
     st.session_state.history = []
+
+if "show_hint" not in st.session_state:
+    st.session_state.show_hint = True
+
+if "hint_message" not in st.session_state:
+    st.session_state.hint_message = None
 
 st.subheader("Make a guess")
 
 st.info(
-    f"Guess a number between 1 and 100. "
+    f"Guess a number between {low} and {high}. " # Fix: Corrected range display to match difficulty settings.
     f"Attempts left: {attempt_limit - st.session_state.attempts}"
 )
 
@@ -60,7 +69,7 @@ raw_guess = st.text_input( #FIXME: Logic broke here.
     "Enter your guess:",
     key=f"guess_input_{difficulty}",
     on_change=lambda: st.session_state.update({"submit_triggered": True}),
-    # Fixed so enter key submits the guess the same as clicking the submit button.
+    # FIX: Enter key submits the guess the same as clicking the submit button.
 )
 
 col1, col2, col3 = st.columns(3)
@@ -69,11 +78,14 @@ with col1:
 with col2:
     new_game = st.button("New Game 🔁")
 with col3:
-    show_hint = st.checkbox("Show hint", value=True)
-
+    st.session_state.show_hint = st.checkbox("Show hint", value=st.session_state.show_hint)
+# Fix: Both submission methods should show hints.
 if new_game:
     st.session_state.attempts = 0
-    st.session_state.secret = random.randint(1, 100)
+    st.session_state.secret = random.randint(low, high) #FIXME: Logic broke here. FIX: New secret generated within the correct range for each mode.
+    st.session_state.status = "playing" #Fix: Added to reset game status on new game.
+    st.session_state.history = []
+    st.session_state.last_processed_guess = None
     st.success("New game started.")
     st.rerun()
 
@@ -84,51 +96,66 @@ if st.session_state.status != "playing":
         st.error("Game over. Start a new game to try again.")
     st.stop()
 
-if st.session_state.get("submit_triggered") or submit:
+#FIXME: Logic broke here.
+# Fix: Ensured that guesses are only processed once per submission to avoid duplicate processing.
+# Agent also shifted indentation.
+# Fix: Both button click and Enter key trigger submission and hints are shown regardless of submission method.
+if (st.session_state.get("submit_triggered") or submit) and raw_guess:
+    # Clear the submit_triggered flag first
     if st.session_state.get("submit_triggered"):
         st.session_state.submit_triggered = False
     
-    st.session_state.attempts += 1
+    # Prevent processing the same guess twice
+    if raw_guess != st.session_state.last_processed_guess:
+        st.session_state.last_processed_guess = raw_guess
+        st.session_state.attempts += 1
 
-    ok, guess_int, err = parse_guess(raw_guess)
+        ok, guess_int, err = parse_guess(raw_guess)
 
-    if not ok:
-        st.session_state.history.append(raw_guess)
-        st.error(err)
-    else:
-        st.session_state.history.append(guess_int)
-
-        if st.session_state.attempts % 2 == 0:
-            secret = str(st.session_state.secret)
+        if not ok:
+            st.session_state.history.append(raw_guess)
+            st.error(err)
         else:
-            secret = st.session_state.secret
+            st.session_state.history.append(guess_int)
 
-        outcome, message = check_guess(guess_int, secret)
+            if st.session_state.attempts % 2 == 0:
+                secret = str(st.session_state.secret)
+            else:
+                secret = st.session_state.secret
 
-        if show_hint:
-            st.warning(message)
+            outcome, message = check_guess(guess_int, secret)
 
-        st.session_state.score = update_score(
-            current_score=st.session_state.score,
-            outcome=outcome,
-            attempt_number=st.session_state.attempts,
-        )
+            # Store hint message in session state
+            if st.session_state.show_hint:
+                st.session_state.hint_message = message
+            else:
+                st.session_state.hint_message = None
 
-        if outcome == "Win":
-            st.balloons()
-            st.session_state.status = "won"
-            st.success(
-                f"You won! The secret was {st.session_state.secret}. "
-                f"Final score: {st.session_state.score}"
+            st.session_state.score = update_score(
+                current_score=st.session_state.score,
+                outcome=outcome,
+                attempt_number=st.session_state.attempts,
             )
-        else:
-            if st.session_state.attempts >= attempt_limit:
-                st.session_state.status = "lost"
-                st.error(
-                    f"Out of attempts! "
-                    f"The secret was {st.session_state.secret}. "
-                    f"Score: {st.session_state.score}"
+
+            if outcome == "Win":
+                st.balloons()
+                st.session_state.status = "won"
+                st.success(
+                    f"You won! The secret was {st.session_state.secret}. "
+                    f"Final score: {st.session_state.score}"
                 )
+            else:
+                if st.session_state.attempts >= attempt_limit:
+                    st.session_state.status = "lost"
+                    st.error(
+                        f"Out of attempts! "
+                        f"The secret was {st.session_state.secret}. "
+                        f"Score: {st.session_state.score}"
+                    )
+
+# Display hint message if available
+if st.session_state.hint_message and st.session_state.status == "playing":
+    st.warning(st.session_state.hint_message)
 
 st.divider()
 st.caption("Built by an AI that claims this code is production-ready.")
