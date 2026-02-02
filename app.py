@@ -35,16 +35,16 @@ def check_guess(guess, secret):
 
     try:
         if guess > secret:
-            return "Too High", "📈 Go HIGHER!" #FIXME: logic breaks here.
+            return "Too High", "📉 Go LOWER!" #FIXME: logic broke here.
         else:
-            return "Too Low", "📉 Go LOWER!" #FIXME: logic breaks here.
+            return "Too Low", "📈 Go HIGHER!" #FIXME: logic broke here.
     except TypeError:
         g = str(guess)
         if g == secret:
             return "Win", "🎉 Correct!"
         if g > secret:
-            return "Too High", "📈 Go HIGHER!"
-        return "Too Low", "📉 Go LOWER!"
+            return "Too High", "� Go LOWER!"
+        return "Too Low", "📈 Go HIGHER!"
 
 
 def update_score(current_score: int, outcome: str, attempt_number: int):
@@ -92,8 +92,8 @@ st.sidebar.caption(f"Attempts allowed: {attempt_limit}")
 if "secret" not in st.session_state:
     st.session_state.secret = random.randint(low, high)
 
-if "attempts" not in st.session_state: #FIXME: Logic breaks here.
-    st.session_state.attempts = 0
+if "attempts" not in st.session_state: #FIXME: Logic broke here.
+    st.session_state.attempts = 0 # Changed from 1 to 0 to count attempts correctly with Agent mode.
 
 if "score" not in st.session_state:
     st.session_state.score = 0
@@ -118,9 +118,11 @@ with st.expander("Developer Debug Info"):
     st.write("Difficulty:", difficulty)
     st.write("History:", st.session_state.history)
 
-raw_guess = st.text_input( #FIXME: Logic breaks here.
+raw_guess = st.text_input( #FIXME: Logic broke here.
     "Enter your guess:",
-    key=f"guess_input_{difficulty}"
+    key=f"guess_input_{difficulty}",
+    on_change=lambda: st.session_state.update({"submit_triggered": True}),
+    # Fixed so enter key submits the guess the same as clicking the submit button.
 )
 
 col1, col2, col3 = st.columns(3)
@@ -144,7 +146,10 @@ if st.session_state.status != "playing":
         st.error("Game over. Start a new game to try again.")
     st.stop()
 
-if submit:
+if st.session_state.get("submit_triggered") or submit:
+    if st.session_state.get("submit_triggered"):
+        st.session_state.submit_triggered = False
+    
     st.session_state.attempts += 1
 
     ok, guess_int, err = parse_guess(raw_guess)
