@@ -35,9 +35,9 @@ def check_guess(guess, secret):
 
     try:
         if guess > secret:
-            return "Too High", "📈 Go HIGHER!"
+            return "Too High", "📈 Go HIGHER!" #FIXME: logic breaks here.
         else:
-            return "Too Low", "📉 Go LOWER!"
+            return "Too Low", "📉 Go LOWER!" #FIXME: logic breaks here.
     except TypeError:
         g = str(guess)
         if g == secret:
@@ -92,8 +92,8 @@ st.sidebar.caption(f"Attempts allowed: {attempt_limit}")
 if "secret" not in st.session_state:
     st.session_state.secret = random.randint(low, high)
 
-if "attempts" not in st.session_state:
-    st.session_state.attempts = 1
+if "attempts" not in st.session_state: #FIXME: Logic breaks here.
+    st.session_state.attempts = 0
 
 if "score" not in st.session_state:
     st.session_state.score = 0
@@ -118,7 +118,7 @@ with st.expander("Developer Debug Info"):
     st.write("Difficulty:", difficulty)
     st.write("History:", st.session_state.history)
 
-raw_guess = st.text_input(
+raw_guess = st.text_input( #FIXME: Logic breaks here.
     "Enter your guess:",
     key=f"guess_input_{difficulty}"
 )
